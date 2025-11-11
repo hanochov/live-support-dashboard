@@ -2,15 +2,17 @@ export type TicketStatus = "Open" | "InProgress" | "Resolved";
 export type TicketPriority = "Low" | "Medium" | "High" | "Critical";
 
 export interface ITicket {
-  id: string;
+  id: number;
   title: string;
   description: string;
   status: TicketStatus;
   priority: TicketPriority;
-  assignedTo?: string | null;
   createdAt: string;
   updatedAt: string;
+  agentId?: number | null;
+  agentName?: string | null;
 }
+
 
 export interface ICreateTicketRequest {
   title: string;

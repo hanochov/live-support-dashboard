@@ -6,6 +6,7 @@ import type {
   IUpdateTicketRequest,
   IUpdateTicketStatusRequest,
 } from "../../interfaces/tickets";
+import type { IAssignTicketRequest } from "../../interfaces/agents";
 
 export async function listTickets(
   q: ITicketListQuery = {}
@@ -48,4 +49,8 @@ export async function updateTicketStatus(
 
 export async function deleteTicket(id: string): Promise<void> {
   await http.delete(`/api/tickets/${id}`);
+}
+
+export async function assignTicket(id: number | string, payload: IAssignTicketRequest): Promise<void> {
+  await http.patch(`/api/tickets/${id}/assign`, payload);
 }

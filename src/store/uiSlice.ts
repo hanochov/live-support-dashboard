@@ -1,4 +1,3 @@
-
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 export type TicketStatus = "Open" | "InProgress" | "Resolved" | "All";
@@ -9,6 +8,7 @@ export interface UiState {
     status: TicketStatus;
     priority: TicketPriority;
     search: string;
+    agentId: number | null;
   };
   modals: {
     createOpen: boolean;
@@ -23,7 +23,7 @@ export interface UiState {
 }
 
 const initialState: UiState = {
-  filters: { status: "All", priority: "All", search: "" },
+  filters: { status: "All", priority: "All", search: "", agentId: null },
   modals: { createOpen: false, editOpen: false, drawerOpen: false },
   live: { connected: false, reconnecting: false, error: null },
 };
@@ -40,6 +40,9 @@ const uiSlice = createSlice({
     },
     setSearch(state, action: PayloadAction<string>) {
       state.filters.search = action.payload;
+    },
+    setAgentFilter(state, action: PayloadAction<number | null>) {
+      state.filters.agentId = action.payload;
     },
     openCreate(state) {
       state.modals.createOpen = true;
@@ -80,6 +83,7 @@ export const {
   setStatusFilter,
   setPriorityFilter,
   setSearch,
+  setAgentFilter,
   openCreate, closeCreate,
   openEdit, closeEdit,
   openDrawer, closeDrawer,
