@@ -2,13 +2,21 @@ import React from "react";
 import { useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Box, Stack, Typography, Divider, TextField, MenuItem
+  Box,
+  Paper,
+  Stack,
+  Typography,
+  Divider,
+  TextField,
+  MenuItem,
+  Grid,
 } from "@mui/material";
 import { getTicket, assignTicket, updateTicketStatus } from "../../services/api/ticketsApi";
 import { qk } from "../../services/api/queryKeys";
 import type { ITicket, TicketStatus } from "../../interfaces/tickets";
 import AgentPicker from "../../components/AgentPicker/AgentPicker";
-import LiveStatus from "../../components/LiveStatus/LiveStatus";
+import StatusPill from "../../components/Pills/StatusPill";
+import PriorityPill from "../../components/Pills/PriorityPill";
 
 const statuses: TicketStatus[] = ["Open", "InProgress", "Resolved"];
 const StatusTextToNum: Record<TicketStatus, number> = { Open: 0, InProgress: 1, Resolved: 2 };
@@ -19,7 +27,7 @@ const TicketDetails: React.FC = () => {
 
   const { data, isLoading, isError } = useQuery({
     queryKey: qk.ticket(id || ""),
-    queryFn: () => getTicket(id || "")
+    queryFn: () => getTicket(id || ""),
   });
 
   const assignMut = useMutation({
@@ -27,58 +35,110 @@ const TicketDetails: React.FC = () => {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: qk.ticket(id || "") });
       qc.invalidateQueries({ queryKey: qk.tickets() });
-    }
+    },
   });
 
   const statusMut = useMutation({
-    mutationFn: (next: TicketStatus) =>
-      updateTicketStatus(id!, { status: StatusTextToNum[next] }),
+    mutationFn: (next: TicketStatus) => updateTicketStatus(id!, { status: StatusTextToNum[next] }),
     onSuccess: () => {
-      // אם יש SignalR שמפרסם TicketStatusChanged, זה יתעדכן גם לבד.
       qc.invalidateQueries({ queryKey: qk.ticket(id || "") });
       qc.invalidateQueries({ queryKey: qk.tickets() });
-    }
+    },
   });
 
   const t = data as ITicket | undefined;
 
   return (
     <Box p={3}>
-      <Stack direction="row" alignItems="center" justifyContent="space-between" mb={2}>
-        <Typography variant="h5">Ticket Details</Typography>
+      <Stack direction="row" alignItems="center" justifyContent="space-between" mb={2} gap={2}>
+        <Typography variant="h5" sx={{ fontWeight: 600 }}>
+          Ticket Details
+        </Typography>
       </Stack>
+
       <Divider sx={{ mb: 2 }} />
 
-      {isLoading && <Typography>Loading...</Typography>}
+      {isLoading && <Typography>Loading…</Typography>}
       {isError && <Typography color="error">Failed to load ticket.</Typography>}
 
       {t && (
-        <Stack spacing={2}>
-          <Typography>ID: {t.id}</Typography>
-          <Typography>Title: {t.title}</Typography>
+        <Grid container spacing={2}>
+          <Grid size={{ xs: 12, md: 8 }}>
+            <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+              <Stack spacing={1.5}>
+                <Stack direction="row" alignItems="center" justifyContent="space-between" gap={2}>
+                  <Stack spacing={0.5}>
+                    <Typography variant="subtitle2" sx={{ color: "text.secondary" }}>
+                      #{t.id}
+                    </Typography>
+                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                      {t.title}
+                    </Typography>
+                  </Stack>
 
-          <TextField
-            select
-            label="Status"
-            value={t.status}
-            onChange={(e) => statusMut.mutate(e.target.value as TicketStatus)}
-            sx={{ maxWidth: 260 }}
-          >
-            {statuses.map((s) => (
-              <MenuItem key={s} value={s}>{s}</MenuItem>
-            ))}
-          </TextField>
+                  <Stack direction="row" spacing={1.5} flexWrap="wrap" useFlexGap>
+                    <StatusPill value={t.status} />
+                    <PriorityPill value={t.priority} />
+                  </Stack>
+                </Stack>
 
-          <Typography>Priority: {t.priority}</Typography>
+                <Divider />
 
-          <AgentPicker
-            value={t.agentId ?? null}
-            onChange={(v) => assignMut.mutate({ agentId: v })}
-            sx={{ maxWidth: 260 }}
-          />
+                <Typography variant="body2" sx={{ color: "text.secondary", whiteSpace: "pre-wrap" }}>
+                  {t.description || "No description."}
+                </Typography>
+              </Stack>
+            </Paper>
+          </Grid>
 
-          <Typography>Description: {t.description}</Typography>
-        </Stack>
+          <Grid size={{ xs: 12, md: 4 }}>
+            <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+              <Stack spacing={2}>
+                <TextField
+                  select
+                  label="Status"
+                  value={t.status}
+                  onChange={(e) => statusMut.mutate(e.target.value as TicketStatus)}
+                  size="small"
+                  fullWidth
+                >
+                  {statuses.map((s) => (
+                    <MenuItem key={s} value={s}>
+                      {s}
+                    </MenuItem>
+                  ))}
+                </TextField>
+
+                <AgentPicker
+                  value={t.agentId ?? null}
+                  onChange={(v) => assignMut.mutate({ agentId: v })}
+                  sx={{ width: "100%" }}
+                  label="Assign to agent"
+                />
+
+                <Divider />
+
+                <Stack spacing={0.5}>
+                  <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                    Created
+                  </Typography>
+                  <Typography variant="body2">
+                    {new Date(t.createdAt).toLocaleString()}
+                  </Typography>
+                </Stack>
+
+                <Stack spacing={0.5}>
+                  <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                    Updated
+                  </Typography>
+                  <Typography variant="body2">
+                    {new Date(t.updatedAt).toLocaleString()}
+                  </Typography>
+                </Stack>
+              </Stack>
+            </Paper>
+          </Grid>
+        </Grid>
       )}
     </Box>
   );

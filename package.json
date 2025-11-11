@@ -9,7 +9,7 @@
     "build": "tsc -b && vite build --mode production",
     "lint": "eslint .",
     "preview": "vite preview --mode production",
-        "test": "jest",
+    "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage"
   },
@@ -30,6 +30,7 @@
     "react-hot-toast": "^2.6.0",
     "react-redux": "^9.2.0",
     "react-router-dom": "^7.9.5",
+    "recharts": "^3.4.1",
     "zod": "^4.1.12"
   },
   "devDependencies": {
