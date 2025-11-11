@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Divider } from "@mui/material";
+import { Box } from "@mui/material";
 import StatCards from "../../components/Dashboard/StatCards";
 import TicketsPage from "../Tickets/TicketsPage";
 import DailyIssuesChart from "../../components/Dashboard/DailyIssuesChart";

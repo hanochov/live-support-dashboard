@@ -2,9 +2,8 @@ import http from "./http";
 import type {
   ITicket,
   ITicketListQuery,
-  ICreateTicketRequest,
   IUpdateTicketRequest,
-  IUpdateTicketStatusRequest,
+  IUpdateTicketStatusApiRequest,
 } from "../../interfaces/tickets";
 import type { IAssignTicketRequest } from "../../interfaces/agents";
 import type { ICreateTicketApiRequest } from "../../interfaces/tickets";

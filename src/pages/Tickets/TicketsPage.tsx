@@ -36,7 +36,6 @@ import type {
 } from "../../interfaces/tickets";
 import AgentPicker from "../../components/AgentPicker/AgentPicker";
 import AgentLabel from "../../components/AgentLabel/AgentLabel";
-import LiveStatus from "../../components/LiveStatus/LiveStatus";
 import { useAppDispatch, useAppSelector } from "../../store";
 import { selectFilters } from "../../store/selectors";
 import { useNavigate } from "react-router-dom";
