@@ -22,7 +22,8 @@ import {
   useMediaQuery,
   useTheme,
 } from "@mui/material";
-import VisibilityIcon from "@mui/icons-material/Visibility";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+
 import ArrowDropUpIcon from "@mui/icons-material/ArrowDropUp";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import { useQuery } from "@tanstack/react-query";
@@ -198,7 +199,7 @@ const TicketsPage: React.FC = () => {
               navigate(`/tickets/${t.id}`);
             }}
           >
-            <VisibilityIcon fontSize="small" />
+            <EditOutlinedIcon  fontSize="small" />
           </IconButton>
         </Stack>
 
@@ -228,21 +229,29 @@ const TicketsPage: React.FC = () => {
 
   return (
     <Box p={3}>
-      <Stack
-        direction="row"
-        alignItems="center"
-        justifyContent="space-between"
-        mb={1}
-        gap={2}
-      >
-        <Typography variant="h5">Tickets</Typography>
-        <Stack direction="row" alignItems="center" gap={2}>
-          <LiveStatus />
-          <Button variant="contained" onClick={() => navigate("/tickets/new")}>
-            New Ticket
-          </Button>
-        </Stack>
-      </Stack>
+    <Stack
+  direction="row"
+  alignItems="center"
+  justifyContent="space-between"
+  flexWrap="wrap"
+  mb={2}
+  gap={2}
+>
+  <Typography variant="h5" sx={{ fontWeight: 600 }}>
+    Tickets
+  </Typography>
+
+  <Stack direction="row" alignItems="center" gap={2}>
+    <Button
+      variant="contained"
+      onClick={() => navigate("/tickets/new")}
+      sx={{ whiteSpace: "nowrap" }}
+    >
+      New Ticket
+    </Button>
+  </Stack>
+</Stack>
+
 
 <Toolbar
   disableGutters
@@ -403,7 +412,7 @@ const TicketsPage: React.FC = () => {
                           aria-label="view"
                           onClick={() => navigate(`/tickets/${t.id}`)}
                         >
-                          <VisibilityIcon />
+                          <EditOutlinedIcon  />
                         </IconButton>
                       </TableCell>
                     </TableRow>

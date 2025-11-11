@@ -46,7 +46,6 @@ const TicketDetails: React.FC = () => {
     <Box p={3}>
       <Stack direction="row" alignItems="center" justifyContent="space-between" mb={2}>
         <Typography variant="h5">Ticket Details</Typography>
-        <LiveStatus />
       </Stack>
       <Divider sx={{ mb: 2 }} />
 
