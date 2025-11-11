@@ -16,15 +16,29 @@ export interface ITicket {
 
 export interface ICreateTicketRequest {
   title: string;
+  customerEmail: string;
   description: string;
   priority: TicketPriority;
+}
+
+export interface IUpdateTicketStatusApiRequest {
+  status: number; 
 }
 
 export interface IUpdateTicketRequest {
   title: string;
   description: string;
   priority: TicketPriority;
+  
 }
+
+export interface ICreateTicketApiRequest {
+  title: string;
+  description?: string;
+  customerEmail: string;
+  priority: number; 
+}
+
 
 export interface IUpdateTicketStatusRequest {
   status: TicketStatus;
