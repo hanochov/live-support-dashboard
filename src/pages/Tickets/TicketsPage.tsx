@@ -16,17 +16,19 @@ import {
   Toolbar,
   Divider,
   Button,
+  IconButton,
 } from "@mui/material";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { listTickets, assignTicket } from "../../services/api/ticketsApi";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import { useQuery } from "@tanstack/react-query";
+import { listTickets } from "../../services/api/ticketsApi";
 import { qk } from "../../services/api/queryKeys";
 import type { ITicket } from "../../interfaces/tickets";
 import AgentPicker from "../../components/AgentPicker/AgentPicker";
+import AgentLabel from "../../components/AgentLabel/AgentLabel";
 import LiveStatus from "../../components/LiveStatus/LiveStatus";
 import { useAppDispatch, useAppSelector } from "../../store";
 import { selectFilters } from "../../store/selectors";
 import { useNavigate } from "react-router-dom";
-
 import {
   setSearch,
   setStatusFilter,
@@ -35,31 +37,22 @@ import {
 } from "../../store/uiSlice";
 
 const TicketsPage: React.FC = () => {
-  const qc = useQueryClient();
   const dispatch = useAppDispatch();
   const filters = useAppSelector(selectFilters);
   const navigate = useNavigate();
+
   const { data, isLoading, isError } = useQuery<ITicket[]>({
-    queryKey: ["tickets"] as const,
+    queryKey: qk.tickets(),
     queryFn: () => listTickets(),
   });
 
-  const mutateAssign = useMutation({
-    mutationFn: ({ id, agentId }: { id: number; agentId: number | null }) =>
-      assignTicket(id, { agentId }),
-    onSuccess: (_, vars) => {
-      qc.invalidateQueries({ queryKey: qk.tickets() });
-      qc.invalidateQueries({ queryKey: qk.ticket(vars.id) });
-    },
-  });
-
   const filtered = useMemo(() => {
-    const items = data as ITicket[];
+    const items = (data ?? []) as ITicket[];
 
-    return items?.filter((t) => {
+    return items.filter((t) => {
       if (filters.status !== "All" && t.status !== filters.status) return false;
-      if (filters.priority !== "All" && t.priority !== filters.priority)
-        return false;
+      if (filters.priority !== "All" && t.priority !== filters.priority) return false;
+
       if (filters.agentId !== null) {
         const agentMatch =
           (t.agentId ?? null) === filters.agentId ||
@@ -67,6 +60,7 @@ const TicketsPage: React.FC = () => {
             (t.agentId === null || t.agentId === undefined));
         if (!agentMatch) return false;
       }
+
       if (filters.search.trim()) {
         const s = filters.search.trim().toLowerCase();
         const inTitle = t.title?.toLowerCase().includes(s);
@@ -78,19 +72,20 @@ const TicketsPage: React.FC = () => {
     });
   }, [data, filters]);
 
+  const handleRowClick = (id: number) => {
+    navigate(`/tickets/${id}`);
+  };
+
   return (
     <Box p={3}>
-      <Stack
-        direction="row"
-        alignItems="center"
-        justifyContent="space-between"
-        mb={1}
-      >
+      <Stack direction="row" alignItems="center" justifyContent="space-between" mb={1} gap={2}>
         <Typography variant="h5">Tickets</Typography>
-        <LiveStatus />
-        <Button variant="contained" onClick={() => navigate("/tickets/new")}>
-          New Ticket
-        </Button>
+        <Stack direction="row" alignItems="center" gap={2}>
+          <LiveStatus />
+          <Button variant="contained" onClick={() => navigate("/tickets/new")}>
+            New Ticket
+          </Button>
+        </Stack>
       </Stack>
 
       <Toolbar disableGutters sx={{ gap: 2, mb: 1, flexWrap: "wrap" }}>
@@ -141,9 +136,7 @@ const TicketsPage: React.FC = () => {
       <Divider sx={{ mb: 2 }} />
 
       {isLoading && <Typography>Loading…</Typography>}
-      {isError && (
-        <Typography color="error">Failed to load tickets.</Typography>
-      )}
+      {isError && <Typography color="error">Failed to load tickets.</Typography>}
 
       {!isLoading && !isError && (
         <>
@@ -159,23 +152,29 @@ const TicketsPage: React.FC = () => {
                 <TableCell>Status</TableCell>
                 <TableCell>Priority</TableCell>
                 <TableCell>Agent</TableCell>
+                <TableCell align="right">Actions</TableCell>
               </TableRow>
             </TableHead>
+
             <TableBody>
               {filtered.map((t) => (
-                <TableRow key={t.id} hover>
+                <TableRow
+                  key={t.id}
+                  hover
+                  onClick={() => handleRowClick(t.id)}
+                  sx={{ cursor: "pointer" }}
+                >
                   <TableCell>{t.id}</TableCell>
                   <TableCell>{t.title}</TableCell>
                   <TableCell>{t.status}</TableCell>
                   <TableCell>{t.priority}</TableCell>
-                  <TableCell>
-                    <AgentPicker
-                      value={t.agentId ?? null}
-                      onChange={(v) =>
-                        mutateAssign.mutate({ id: t.id, agentId: v })
-                      }
-                      sx={{ minWidth: 220 }}
-                    />
+                  <TableCell sx={{ minWidth: 240 }}>
+                    <AgentLabel agentId={t.agentId ?? null} />
+                  </TableCell>
+                  <TableCell align="right" onClick={(e) => e.stopPropagation()}>
+                    <IconButton aria-label="view" onClick={() => navigate(`/tickets/${t.id}`)}>
+                      <VisibilityIcon />
+                    </IconButton>
                   </TableCell>
                 </TableRow>
               ))}
