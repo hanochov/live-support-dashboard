@@ -1,58 +1,167 @@
-import React from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Box, Table, TableBody, TableCell, TableHead, TableRow, Typography } from "@mui/material";
-import { listTickets } from "../../services/api/ticketsApi";
-import { assignTicket } from "../../services/api/ticketsApi";
-import { qk } from "../../services/api/queryKeys";
-import type { ITicket } from "../../interfaces/tickets";
-import AgentPicker from "../../components/AgentPicker/AgentPicker";
+import React, { useMemo } from 'react';
+import {
+  Container,
+  Typography,
+  Grid,
+  Box,
+  Button,
+  CircularProgress,
+  Alert,
+  Toolbar,
+  TextField,
+  MenuItem,
+} from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
+import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
+import { listTickets } from '../../services/api/ticketsApi';
+import { qk } from '../../services/api/queryKeys';
+import { useAppSelector, useAppDispatch } from '../../store';
+import { selectFilters } from '../../store/selectors';
+import {
+  setStatusFilter,
+  setPriorityFilter,
+  setSearch,
+  openCreate,
+} from '../../store/uiSlice';
+import StatsCard from '../../components/StatsCard/StatsCard';
+import TicketList from '../../components/TicketList/TicketList';
+import TicketDrawer from '../../components/TicketDrawer/TicketDrawer';
+import type { TicketPriority, TicketStatus } from '../../interfaces/tickets';
+
+const STATUS_OPTIONS: (TicketStatus | 'All')[] = ['All', 'Open', 'InProgress', 'Resolved'];
+const PRIORITY_OPTIONS: (TicketPriority | 'All')[] = ['All', 'Low', 'Medium', 'High', 'Critical'];
 
 const TicketsPage: React.FC = () => {
-  const qc = useQueryClient();
-  const { data, isLoading } = useQuery({ queryKey: qk.tickets(), queryFn: () => listTickets() });
+  const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const filters = useAppSelector(selectFilters);
 
-  const m = useMutation({
-    mutationFn: ({ id, agentId }: { id: number; agentId: number | null }) => assignTicket(id, { agentId }),
-    onSuccess: (_, vars) => {
-      qc.invalidateQueries({ queryKey: qk.tickets() });
-      qc.invalidateQueries({ queryKey: qk.ticket(vars.id) });
-    },
+  const { data: tickets, isLoading, isError, error } = useQuery({
+    queryKey: qk.tickets(filters),
+    queryFn: () =>
+      listTickets({
+        status: filters.status,
+        priority: filters.priority,
+        search: filters.search,
+      }),
   });
 
-  if (isLoading) return <Box p={3}><Typography>Loading...</Typography></Box>;
+  const stats = useMemo(() => {
+    if (!tickets) return { open: 0, inProgress: 0, resolvedToday: 0, critical: 0 };
+    const open = tickets.filter((t) => t.status === 'Open').length;
+    const inProgress = tickets.filter((t) => t.status === 'InProgress').length;
+    const critical = tickets.filter((t) => t.priority === 'Critical').length;
+    const resolvedToday = 5;
+    return { open, inProgress, resolvedToday, critical };
+  }, [tickets]);
+
+  const handleTicketClick = (ticketId: number) => {
+    navigate(`/tickets/${ticketId}`);
+  };
+
+  if (isLoading) return <CircularProgress sx={{ display: 'block', m: '40px auto' }} />;
+  if (isError) return <Alert severity="error">Error loading tickets: {error?.message}</Alert>;
 
   return (
-    <Box p={3}>
-      <Typography variant="h5" mb={2}>Tickets</Typography>
-      <Table size="small">
-        <TableHead>
-          <TableRow>
-            <TableCell>Id</TableCell>
-            <TableCell>Title</TableCell>
-            <TableCell>Status</TableCell>
-            <TableCell>Priority</TableCell>
-            <TableCell>Agent</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {(data as ITicket[]).map(t => (
-            <TableRow key={t.id}>
-              <TableCell>{t.id}</TableCell>
-              <TableCell>{t.title}</TableCell>
-              <TableCell>{t.status}</TableCell>
-              <TableCell>{t.priority}</TableCell>
-              <TableCell>
-                <AgentPicker
-                  value={t.agentId ?? null}
-                  onChange={(v) => m.mutate({ id: t.id, agentId: v })}
-                  sx={{ minWidth: 220 }}
-                />
-              </TableCell>
-            </TableRow>
+    <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
+      <Typography variant="h4" component="h1" gutterBottom>
+        Live Support Dashboard
+      </Typography>
+
+      {/* Stats Cards Section (Responsive) */}
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <StatsCard title="Open Tickets" value={stats.open} color="info.main" />
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <StatsCard title="In Progress" value={stats.inProgress} color="warning.main" />
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <StatsCard title="Critical Tickets" value={stats.critical} color="error.main" />
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <StatsCard title="Resolved Today" value={stats.resolvedToday} color="success.main" />
+        </Grid>
+      </Grid>
+
+      {/* Filtering and Actions Toolbar */}
+      <Toolbar
+        component={Box}
+        sx={{
+          backgroundColor: 'background.paper',
+          borderRadius: 1,
+          mb: 3,
+          flexWrap: 'wrap',
+          gap: 2,
+        }}
+      >
+        <TextField
+          label="Search Ticket"
+          size="small"
+          value={filters.search}
+          onChange={(e) => dispatch(setSearch(e.target.value))}
+          sx={{ minWidth: 200, flexGrow: 1 }}
+        />
+
+        <TextField
+          select
+          label="Status"
+          size="small"
+          value={filters.status}
+          onChange={(e) =>
+            dispatch(setStatusFilter(e.target.value as TicketStatus | 'All'))
+          }
+          sx={{ minWidth: 120 }}
+        >
+          {STATUS_OPTIONS.map((option) => (
+            <MenuItem key={option} value={option}>
+              {option}
+            </MenuItem>
           ))}
-        </TableBody>
-      </Table>
-    </Box>
+        </TextField>
+
+        <TextField
+          select
+          label="Priority"
+          size="small"
+          value={filters.priority}
+          onChange={(e) =>
+            dispatch(setPriorityFilter(e.target.value as TicketPriority | 'All'))
+          }
+          sx={{ minWidth: 120 }}
+        >
+          {PRIORITY_OPTIONS.map((option) => (
+            <MenuItem key={option} value={option}>
+              {option}
+            </MenuItem>
+          ))}
+        </TextField>
+
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<AddIcon />}
+          onClick={() => dispatch(openCreate())}
+          sx={{ ml: 'auto' }}
+        >
+          Create New Ticket
+        </Button>
+      </Toolbar>
+
+      {/* Ticket List Section */}
+      <Box sx={{ backgroundColor: 'background.paper', borderRadius: 1, p: 2, boxShadow: 1 }}>
+        <TicketList tickets={tickets ?? []} onTicketClick={handleTicketClick} />
+        {tickets?.length === 0 && (
+          <Typography variant="body1" color="text.secondary" sx={{ py: 3, textAlign: 'center' }}>
+            No tickets match the current filters.
+          </Typography>
+        )}
+      </Box>
+
+      {/* Ticket Creation Drawer */}
+      <TicketDrawer />
+    </Container>
   );
 };
 
